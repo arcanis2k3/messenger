@@ -55,6 +55,13 @@ export default function TabLayout() {
           headerShown: false, // Important: The stack navigator inside 'messages' will handle its own header
         }}
       />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: 'Settings',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="gear" color={color} />,
+        }}
+      />
     </Tabs>
   );
 }

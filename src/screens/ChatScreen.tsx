@@ -1,16 +1,15 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from 'react-native';
-import { useLocalSearchParams } from 'expo-router'; // Changed to useLocalSearchParams
+import { useLocalSearchParams } from 'expo-router';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
-import { getConversationMessages, sendMessage, Message } from '@/services/api'; // Assuming Message interface is exported
+import { getConversationMessages, Message } from '@/services/api';
+import WebSocketService from '@/services/websocket';
 
 export default function ChatScreen() {
   const params = useLocalSearchParams<{ conversationId: string; participantName?: string; receiverId?: string }>();
   const conversationId = params.conversationId;
-  const receiverId = params.receiverId; // Use this for sending messages
-  // const participantName = params.participantName; // Can be used for header title, etc.
-
+  const receiverId = params.receiverId;
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -18,7 +17,6 @@ export default function ChatScreen() {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Placeholder for current user ID - this should come from auth context/store
   const currentUserId = 'current_user_id_placeholder';
 
   const fetchMessages = async () => {
@@ -37,36 +35,40 @@ export default function ChatScreen() {
 
   useEffect(() => {
     fetchMessages();
-    // TODO: Setup WebSocket listener for new messages in this conversation
-    // And cleanup on unmount
+    WebSocketService.connect('mock-jwt-token'); // Replace with actual token
+
+    const handleMessage = (event: MessageEvent) => {
+      const message = JSON.parse(event.data);
+      if (message.conversation_id === conversationId) {
+        setMessages(prevMessages => [...prevMessages, message].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()));
+      }
+    };
+
+    const client = WebSocketService.getClient();
+    if (client) {
+      client.onmessage = handleMessage;
+    }
+
+    return () => {
+      WebSocketService.disconnect();
+    };
   }, [conversationId]);
 
-  const handleSend = async () => {
+  const handleSend = () => {
     if (newMessage.trim().length === 0) return;
-    // The backend `sendMessage` needs `receiverId` and `content`.
-    // We need to determine receiverId from conversationId or participant details.
-    // This is a simplification; the backend might infer receiver from conversation_id or need explicit receiver_id.
-    // The receiverId is now passed as a route parameter.
     if (!receiverId) {
-        Alert.alert("Error", "Recipient ID is missing. Cannot send message.");
-        return;
+      Alert.alert("Error", "Recipient ID is missing. Cannot send message.");
+      return;
     }
 
     setSending(true);
-    try {
-      // Ensure receiverId is a string, as expected by sendMessage function (based on current api.ts)
-      const sentMessage = await sendMessage(receiverId.toString(), newMessage.trim());
-      setMessages(prevMessages => [...prevMessages, sentMessage].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()));
-      setNewMessage('');
-      // TODO: Also send via WebSocket. The backend should also push this message
-      // to the recipient via WebSocket. The sender might also receive a WebSocket message
-      // for sync across devices, or can rely on this optimistic update.
-    } catch (err: any) {
-      Alert.alert('Send Error', err.message || 'Failed to send message.');
-      console.error("Send message error:", err); // Log for more details
-    } finally {
-      setSending(false);
-    }
+    const message = {
+      receiver_id: receiverId.toString(),
+      content: newMessage.trim(),
+    };
+    WebSocketService.sendMessage(message);
+    setNewMessage('');
+    setSending(false);
   };
 
   if (loading) {

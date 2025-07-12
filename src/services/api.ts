@@ -134,23 +134,6 @@ interface Conversation {
     last_message_content?: string | null;
 }
 
-// From backend: POST /messenger/messages
-export const sendMessage = async (receiverId: string, content: string): Promise<Message> => {
-    try {
-        const response = await apiClient.post<Message>('/messenger/messages', {
-            receiver_id: receiverId, // Assuming the backend expects receiver_id and content
-            content: content,
-        });
-        return response.data;
-    } catch (error) {
-        console.error('Failed to send message:', error);
-        if (axios.isAxiosError(error) && error.response) {
-            throw new Error(`API Error (${error.response.status}): ${error.response.data.detail || error.message}`);
-        }
-        throw new Error('Failed to send message due to an unknown error.');
-    }
-};
-
 // From backend: GET /messenger/conversations
 export const getConversations = async (): Promise<Conversation[]> => {
     try {
