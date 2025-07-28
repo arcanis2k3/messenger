@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Image, StyleSheet, ActivityIndicator, Alert, TouchableOpacity, Platform, TextInput, View } from 'react-native'; // Added View, TextInput
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
-import { getMyProfile, updateUserProfilePicture, updateUserDisplayName } from '@/services/api'; // Added updateUserDisplayName
+import { getMyProfile, updateUserProfilePicture, updateUserDisplayName, getPresignedUrl } from '@/services/api'; // Added updateUserDisplayName
+import axios from 'axios';
 import * as ImagePicker from 'expo-image-picker';
 
 // UserProfile interface based on UserResponse model and expected data
@@ -91,23 +92,23 @@ export default function ProfileScreen() {
       const asset = result.assets[0];
       const uri = asset.uri;
 
-      // Create FormData
-      const formData = new FormData();
-      const filename = uri.split('/').pop();
-      const match = /\.(\w+)$/.exec(filename!);
-      const type = match ? `image/${match[1]}` : `image`;
-
-      // On web, result.assets[0].uri is a blob URI, which is fine.
-      // For native, ensure it's a file URI.
-      // The 'file://' prefix is important for native.
-      formData.append('profile_picture', { uri: uri, name: filename, type } as any);
-
       try {
         setUploading(true);
-        // Assume updateUserProfilePicture expects FormData and handles the upload
-        const updatedProfile = await updateUserProfilePicture(formData);
-        setUser(updatedProfile); // Update user state with the response
-                                 // Or, more robustly, refetch the profile: await fetchProfile();
+
+        const { url } = await getPresignedUrl(uri.split('/').pop()!);
+
+        const response = await fetch(uri);
+        const blob = await response.blob();
+
+        await axios.put(url, blob, {
+          headers: {
+            'Content-Type': blob.type,
+          },
+        });
+
+        // Refetch the profile to get the new profile picture URL
+        await fetchProfile();
+
         Alert.alert('Success', 'Profile picture updated!');
       } catch (err: any) {
         Alert.alert('Upload Error', err.message || 'Failed to upload profile picture.');

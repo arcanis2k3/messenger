@@ -1,8 +1,9 @@
 // This service will manage the WebSocket connection for real-time messaging.
 import { w3cwebsocket as W3CWebSocket } from 'websocket';
 import NotificationService from './notifications';
+import { getAuth } from 'firebase/auth';
 
-const WS_URL = process.env.EXPO_PUBLIC_WS_URL || 'ws://localhost:8000/ws';
+const WS_URL = 'wss://chat.zmodelz.com/messenger/ws';
 
 class WebSocketService {
   private client: W3CWebSocket | null = null;
@@ -17,13 +18,23 @@ class WebSocketService {
     return WebSocketService.instance;
   }
 
-  public connect(token: string): void {
+  public connect(): void {
+    const auth = getAuth();
+    const user = auth.currentUser;
+
+    if (!user) {
+      console.error('WebSocket: No user is authenticated.');
+      return;
+    }
+
+    const userId = user.uid;
+
     if (this.client && this.client.readyState === this.client.OPEN) {
       console.log('WebSocket is already connected.');
       return;
     }
 
-    this.client = new W3CWebSocket(`${WS_URL}/${token}`);
+    this.client = new W3CWebSocket(`${WS_URL}/${userId}`);
 
     this.client.onopen = () => {
       console.log('WebSocket Client Connected');
