@@ -3,72 +3,58 @@ import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Activity
 import { useLocalSearchParams } from 'expo-router';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
-import { getConversationMessages, Message } from '@/services/api';
-import WebSocketService from '@/services/websocket';
+import { getConversationMessages, Message, sendMessageToMatrixRoom } from '@/services/api';
+import i18n from '@/localization/i18n';
 
 export default function ChatScreen() {
-  const params = useLocalSearchParams<{ conversationId: string; participantName?: string; receiverId?: string }>();
+  const params = useLocalSearchParams<{ conversationId: string; participantName?: string; receiverId?: string, roomId?: string }>();
   const conversationId = params.conversationId;
   const receiverId = params.receiverId;
+  const roomId = params.roomId;
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const currentUserId = 'current_user_id_placeholder';
 
-  const fetchMessages = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const fetchedMessages = await getConversationMessages(conversationId);
-      setMessages(fetchedMessages.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()));
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch messages.');
-      Alert.alert('Error', err.message || 'Failed to fetch messages.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // const fetchMessages = async () => {
+  //   try {
+  //     setLoading(true);
+  //     setError(null);
+  //     const fetchedMessages = await getConversationMessages(conversationId);
+  //     setMessages(fetchedMessages.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()));
+  //   } catch (err: any) {
+  //     setError(err.message || 'Failed to fetch messages.');
+  //     Alert.alert('Error', err.message || 'Failed to fetch messages.');
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   useEffect(() => {
-    fetchMessages();
-    WebSocketService.connect('mock-jwt-token'); // Replace with actual token
-
-    const handleMessage = (event: MessageEvent) => {
-      const message = JSON.parse(event.data);
-      if (message.conversation_id === conversationId) {
-        setMessages(prevMessages => [...prevMessages, message].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()));
-      }
-    };
-
-    const client = WebSocketService.getClient();
-    if (client) {
-      client.onmessage = handleMessage;
-    }
-
-    return () => {
-      WebSocketService.disconnect();
-    };
+    // fetchMessages();
   }, [conversationId]);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (newMessage.trim().length === 0) return;
-    if (!receiverId) {
-      Alert.alert("Error", "Recipient ID is missing. Cannot send message.");
+    if (!roomId) {
+      Alert.alert("Error", "Room ID is missing. Cannot send message.");
       return;
     }
 
     setSending(true);
-    const message = {
-      receiver_id: receiverId.toString(),
-      content: newMessage.trim(),
-    };
-    WebSocketService.sendMessage(message);
-    setNewMessage('');
-    setSending(false);
+    try {
+      await sendMessageToMatrixRoom(roomId, newMessage.trim());
+      setNewMessage('');
+    } catch (error) {
+      console.error('Error sending message:', error);
+      Alert.alert('Error', 'An error occurred while sending the message.');
+    } finally {
+      setSending(false);
+    }
   };
 
   if (loading) {
@@ -112,16 +98,21 @@ export default function ChatScreen() {
           )}
           contentContainerStyle={styles.messagesContainer}
         />
+        <View style={styles.disclaimer}>
+          <ThemedText style={styles.disclaimerText}>
+            {i18n.t('messages_not_restored')}
+          </ThemedText>
+        </View>
         <View style={styles.inputContainer}>
           <TextInput
             style={styles.input}
             value={newMessage}
             onChangeText={setNewMessage}
-            placeholder="Type a message..."
+            placeholder={i18n.t('type_a_message')}
             editable={!sending}
           />
           <TouchableOpacity onPress={handleSend} style={styles.sendButton} disabled={sending}>
-            <ThemedText style={styles.sendButtonText}>{sending ? '...' : 'Send'}</ThemedText>
+            <ThemedText style={styles.sendButtonText}>{sending ? i18n.t('sending') : i18n.t('send')}</ThemedText>
           </TouchableOpacity>
         </View>
       </ThemedView>
@@ -213,5 +204,14 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#fff',
     fontSize: 16,
+  },
+  disclaimer: {
+    padding: 10,
+    backgroundColor: '#f8d7da',
+    alignItems: 'center',
+  },
+  disclaimerText: {
+    color: '#721c24',
+    fontSize: 12,
   },
 });

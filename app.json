@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "messenger",
-    "slug": "messenger",
+    "name": "ZMessagez",
+    "slug": "ZMessagez",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/golden_z1024x1024.png",
     "scheme": "messenger",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -13,9 +13,10 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": "./assets/images/golden_z512x512.png",
         "backgroundColor": "#ffffff"
       },
+      "package": "com.zmessagez",
       "edgeToEdgeEnabled": true
     },
     "web": {
@@ -28,8 +29,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
+          "image": "./assets/images/golden_z192x192.png",
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }

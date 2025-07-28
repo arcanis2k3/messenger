@@ -4,39 +4,40 @@ import { useFocusEffect, router } from 'expo-router'; // Changed to router from 
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { getConversations, Conversation } from '@/services/api'; // Assuming Conversation interface is exported from api.ts
+import i18n from '@/localization/i18n';
 
 
 export default function ConversationsScreen() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchConversationsList = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const convos = await getConversations();
-      // Ensure participant_profile is at least an empty object if null/undefined
-      const processedConvos = convos.map(c => ({ ...c, participant_profile: c.participant_profile || {} }));
-      setConversations(processedConvos);
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch conversations.');
-      Alert.alert('Error', err.message || 'Failed to fetch conversations.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // const fetchConversationsList = async () => {
+  //   try {
+  //     setLoading(true);
+  //     setError(null);
+  //     const convos = await getConversations();
+  //     // Ensure participant_profile is at least an empty object if null/undefined
+  //     const processedConvos = convos.map(c => ({ ...c, participant_profile: c.participant_profile || {} }));
+  //     setConversations(processedConvos);
+  //   } catch (err: any) {
+  //     setError(err.message || 'Failed to fetch conversations.');
+  //     Alert.alert('Error', err.message || 'Failed to fetch conversations.');
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
-  // useFocusEffect to refetch conversations when the screen comes into focus
-  useFocusEffect(
-    useCallback(() => {
-      fetchConversationsList();
-      // Optional: Set up listener for new messages/conversations from WebSocket here
-      return () => {
-        // Optional: Clean up listener
-      };
-    }, [])
-  );
+  // // useFocusEffect to refetch conversations when the screen comes into focus
+  // useFocusEffect(
+  //   useCallback(() => {
+  //     fetchConversationsList();
+  //     // Optional: Set up listener for new messages/conversations from WebSocket here
+  //     return () => {
+  //       // Optional: Clean up listener
+  //     };
+  //   }, [])
+  // );
 
   const handleSelectConversation = (conversation: Conversation) => {
     // Placeholder for current user ID - this should come from an auth context/store
@@ -72,10 +73,10 @@ export default function ConversationsScreen() {
   if (error) {
     return (
       <ThemedView style={styles.centered}>
-        <ThemedText type="defaultSemiBold">Error:</ThemedText>
+<ThemedText type="defaultSemiBold">{i18n.t('error')}</ThemedText>
         <ThemedText>{error}</ThemedText>
         <TouchableOpacity onPress={fetchConversationsList} style={styles.button}>
-            <ThemedText style={styles.buttonText}>Retry</ThemedText>
+            <ThemedText style={styles.buttonText}>{i18n.t('retry')}</ThemedText>
         </TouchableOpacity>
       </ThemedView>
     );
@@ -84,9 +85,9 @@ export default function ConversationsScreen() {
   if (conversations.length === 0) {
     return (
       <ThemedView style={styles.centered}>
-        <ThemedText>No conversations yet.</ThemedText>
+        <ThemedText>{i18n.t('no_conversations')}</ThemedText>
          <TouchableOpacity onPress={fetchConversationsList} style={styles.button}>
-            <ThemedText style={styles.buttonText}>Refresh</ThemedText>
+            <ThemedText style={styles.buttonText}>{i18n.t('refresh')}</ThemedText>
         </TouchableOpacity>
       </ThemedView>
     );
@@ -94,6 +95,11 @@ export default function ConversationsScreen() {
 
   return (
     <ThemedView style={styles.container}>
+      <View style={styles.disclaimer}>
+        <ThemedText style={styles.disclaimerText}>
+          {i18n.t('messages_not_restored')}
+        </ThemedText>
+      </View>
       <FlatList
         data={conversations}
         keyExtractor={(item) => item.id.toString()}
@@ -101,7 +107,7 @@ export default function ConversationsScreen() {
           <TouchableOpacity style={styles.conversationItem} onPress={() => handleSelectConversation(item)}>
             {/* Adjust display based on Conversation model details */}
             <ThemedText style={styles.conversationName}>
-              Conversation with: {item.participant_profile?.username || `User ${item.user2_id}`}
+              {i18n.t('conversation_with')} {item.participant_profile?.username || `User ${item.user2_id}`}
             </ThemedText>
             <ThemedText style={styles.lastMessage}>
               {item.last_message_content || 'No messages yet.'}
@@ -147,5 +153,14 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#fff',
     fontSize: 16,
+  },
+  disclaimer: {
+    padding: 10,
+    backgroundColor: '#f8d7da',
+    alignItems: 'center',
+  },
+  disclaimerText: {
+    color: '#721c24',
+    fontSize: 12,
   },
 });
