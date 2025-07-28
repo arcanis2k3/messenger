@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,6 +8,8 @@ import { router } from 'expo-router';
 export default function HomeScreen() {
   return (
     <ThemedView style={styles.container}>
+      <Image source={require('@/assets/images/golden_z512x512.png')} style={styles.logo} />
+      <ThemedText style={styles.title}>Z Messenger</ThemedText>
       <View style={styles.grid}>
         <TouchableOpacity style={styles.gridItem} onPress={() => router.push('/messages')}>
           <Ionicons name="ios-mail" size={64} color="black" />
@@ -66,5 +68,15 @@ const styles = StyleSheet.create({
     height: 24,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  logo: {
+    width: 150,
+    height: 150,
+    marginBottom: 20,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 20,
   },
 });
