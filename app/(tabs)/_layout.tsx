@@ -40,6 +40,28 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
         }}
       />
+      <Tabs.Screen
+        name="profile" // This should match the filename app/(tabs)/profile.tsx
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.fill" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="messages" // This corresponds to the app/(tabs)/messages directory
+        options={{
+          title: 'Messages',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="message.fill" color={color} />, // SF Symbol for messages
+          headerShown: false, // Important: The stack navigator inside 'messages' will handle its own header
+        }}
+      />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: 'Settings',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="gear" color={color} />,
+        }}
+      />
     </Tabs>
   );
 }
